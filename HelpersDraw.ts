@@ -8,7 +8,7 @@ class HelpersDraw {
     startPoint: THREE.Vector3,
     color: number = 0xffdd00,
     scene: THREE.Scene
-  ): void {
+  ): THREE.Vector3 {
     var arrowHelper5 = new THREE.ArrowHelper(
       v.clone().normalize(), //kierunek
       startPoint,
@@ -18,6 +18,8 @@ class HelpersDraw {
       0.2
     );
     scene.add(arrowHelper5);
+
+    return arrowHelper5;
   }
 
   static labelHelper(

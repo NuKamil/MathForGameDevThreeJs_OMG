@@ -133,20 +133,11 @@ class ThirdPersonController {
   }
 
   #mouseMove(e: MouseEvent): void {
-    const deltaX = e.clientX - this.mouse.lastX;
-    const deltaY = e.clientY - this.mouse.lastY;
-
-    this.mouse.deltaX = deltaX;
-    this.mouse.deltaY = deltaY;
-
-    this.#main.yaw.rotation.y -= deltaX * 0.005;
-    const v = this.#main.pitch.rotation.x - deltaY * 0.005;
+    this.#main.yaw.rotation.y -= e.movementX * 0.005;
+    const v: number = this.#main.pitch.rotation.x - e.movementY * 0.005;
     if (v > -1 && v < 0.1) {
       this.#main.pitch.rotation.x = v;
     }
-
-    this.mouse.lastX = e.clientX;
-    this.mouse.lastY = e.clientY;
   }
 }
 export { ThirdPersonController };

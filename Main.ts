@@ -19,6 +19,10 @@ export class Main {
   quaternion: THREE.Quaternion;
   v: THREE.Vector3;
   bilbord: THREE.Mesh;
+  helperArrowBilbord_F: THREE.Vector3;
+  helperArrowBilbord_R: THREE.Vector3;
+  helperArrowBilbord_U: THREE.Vector3;
+  rotationMatrix: THREE.Matrix4;
 
   constructor() {
     const $container = $("<div>");
@@ -38,6 +42,12 @@ export class Main {
     this.yaw = new THREE.Object3D();
     this.pitch = new THREE.Object3D();
     this.v = new THREE.Vector3();
+
+    this.helperArrowBilbord_F = new THREE.Vector3();
+    this.helperArrowBilbord_R = new THREE.Vector3();
+    this.helperArrowBilbord_U = new THREE.Vector3();
+
+    this.rotationMatrix = new THREE.Matrix4();
 
     this.euler = new THREE.Euler();
     this.quaternion = new THREE.Quaternion();
@@ -79,6 +89,31 @@ export class Main {
     HelpersDraw.addCustomAxes(this.scene);
     HelpersDraw.addAxesLabels(this.scene);
     HelpersDraw.addAxesLines(this.scene);
+
+    // const F: THREE.Vector3 = this.player.position
+    //   .clone()
+    //   .sub(this.bilbord.position);
+
+    this.helperArrowBilbord_F = HelpersDraw.arrowHelper(
+      new THREE.Vector3(),
+      this.bilbord.position,
+      0xdd0000,
+      this.scene
+    );
+
+    this.helperArrowBilbord_R = HelpersDraw.arrowHelper(
+      new THREE.Vector3(),
+      this.bilbord.position,
+      0xdd0000,
+      this.scene
+    );
+
+    this.helperArrowBilbord_U = HelpersDraw.arrowHelper(
+      new THREE.Vector3(),
+      this.bilbord.position,
+      0xdd0000,
+      this.scene
+    );
   }
 
   resize() {
@@ -139,7 +174,32 @@ export class Main {
       HelpersMath.myApproach(this.pivot.position.z, this.v.z, 0.1)
     );
 
-    // this.bilbord.lookAt(this.player.position);
+    // this.bilbord.lookAt(this.v);
+
+    const F: THREE.Vector3 = this.player.position
+      .clone()
+      .sub(this.bilbord.position);
+    const R: THREE.Vector3 = HelpersMath.crossProduct(
+      new THREE.Vector3(0, 1, 0),
+      F
+    );
+    const U: THREE.Vector3 = HelpersMath.crossProduct(F, R);
+
+    this.helperArrowBilbord_F.setDirection(F.clone().normalize());
+    this.helperArrowBilbord_F.setLength(F.length());
+    this.helperArrowBilbord_F.position.copy(this.bilbord.position);
+
+    this.helperArrowBilbord_R.setDirection(R.normalize());
+    this.helperArrowBilbord_R.setLength(R.length());
+    this.helperArrowBilbord_R.position.copy(this.bilbord.position);
+    this.helperArrowBilbord_U.setDirection(U.normalize());
+    this.helperArrowBilbord_U.setLength(U.length());
+    this.helperArrowBilbord_U.position.copy(this.bilbord.position);
+
+    this.rotationMatrix.makeBasis(R.normalize(), U.normalize(), F.normalize());
+    this.bilbord.rotation.setFromRotationMatrix(this.rotationMatrix);
+
+    // const playerBasis = this.
   }
 
   //----------------------------------------------------------------------------------------
@@ -151,7 +211,7 @@ export class Main {
     });
 
     const player: THREE.Mesh = new THREE.Mesh(geometry, material);
-    player.position.y = 1;
+    player.position.y = 0.75;
     // player.rotation.set(0, Math.PI / 2, 0);
 
     this.scene.add(player);
