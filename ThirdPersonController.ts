@@ -28,10 +28,12 @@ class ThirdPersonController {
   #move: MoveState;
   #player: THREE.Mesh;
   #main: Main;
+  #camera: THREE.PerspectiveCamera;
 
   constructor(main: Main) {
     this.#main = main;
     this.#player = main.player;
+    this.#camera = main.camera;
     this.#move = { forward: 0, right: 0 };
 
     this.initKeyControl();
@@ -43,6 +45,7 @@ class ThirdPersonController {
     document.addEventListener("mousedown", this.#mouseDown.bind(this));
     document.addEventListener("mouseup", this.#mouseUp.bind(this));
     document.addEventListener("mousemove", this.#mouseMove.bind(this));
+    document.addEventListener("wheel", this.#onDocumentMouseWheel.bind(this));
 
     this.#keys = {
       w: false,
@@ -61,8 +64,8 @@ class ThirdPersonController {
   }
 
   update(dt: number): void {
-    this.#main.velocityGoal.x = this.#move.right;
-    this.#main.velocityGoal.z = this.#move.forward;
+    this.#main.velocityGoal.x = this.#move.forward;
+    this.#main.velocityGoal.z = this.#move.right;
 
     // console.log(this.#move.forward, this.#move.right);
   }
@@ -75,7 +78,7 @@ class ThirdPersonController {
         break;
       case "a":
         this.#keys.a = true;
-        this.#move.right = 5;
+        this.#move.right = -5;
         break;
       case "s":
         this.#keys.s = true;
@@ -83,7 +86,7 @@ class ThirdPersonController {
         break;
       case "d":
         this.#keys.d = true;
-        this.#move.right = -5;
+        this.#move.right = 5;
         break;
       case " ":
         // this.jump();
@@ -122,23 +125,12 @@ class ThirdPersonController {
     this.mouse.mousedown = false;
   }
 
-  // #mouseMove(e: MouseEvent): void {
-  //   const deltaX = e.clientX - this.mouse.lastX;
-  //   const deltaY = e.clientY - this.mouse.lastY;
-
-  //   const sensitivity = 0.01;
-
-  //   this.#player.rotation.y += deltaX * sensitivity;
-  //   // this.#player.rotation.x += deltaY * sensitivity;
-
-  //   // Użyj metody copy() do zaktualizowania obecnej rotacji
-  //   this.#player.rotation.copy(
-  //     HelpersMath.myEulerNormalize(this.#player.rotation)
-  //   );
-
-  //   this.mouse.lastX = e.clientX;
-  //   this.mouse.lastY = e.clientY;
-  // }
+  #onDocumentMouseWheel(e: WheelEvent): void {
+    const v = this.#camera.position.z + e.deltaY * 0.005;
+    if (v >= 2 && v <= 10) {
+      this.#camera.position.z = v;
+    }
+  }
 
   #mouseMove(e: MouseEvent): void {
     const deltaX = e.clientX - this.mouse.lastX;
@@ -146,6 +138,12 @@ class ThirdPersonController {
 
     this.mouse.deltaX = deltaX;
     this.mouse.deltaY = deltaY;
+
+    this.#main.yaw.rotation.y -= deltaX * 0.005;
+    const v = this.#main.pitch.rotation.x - deltaY * 0.005;
+    if (v > -1 && v < 0.1) {
+      this.#main.pitch.rotation.x = v;
+    }
 
     this.mouse.lastX = e.clientX;
     this.mouse.lastY = e.clientY;

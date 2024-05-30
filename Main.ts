@@ -12,6 +12,13 @@ export class Main {
   #velocity: THREE.Vector3;
   velocityGoal: THREE.Vector3;
   player: THREE.Mesh;
+  pivot: THREE.Object3D;
+  yaw: THREE.Object3D;
+  pitch: THREE.Object3D;
+  euler: THREE.Euler;
+  quaternion: THREE.Quaternion;
+  v: THREE.Vector3;
+  bilbord: THREE.Mesh;
 
   constructor() {
     const $container = $("<div>");
@@ -27,16 +34,25 @@ export class Main {
     this.velocityGoal = new THREE.Vector3(0, 0, 0);
     this.#velocity = new THREE.Vector3(0, 0, 0);
 
-    this.camera.position.set(5, 5, 10);
+    this.pivot = new THREE.Object3D();
+    this.yaw = new THREE.Object3D();
+    this.pitch = new THREE.Object3D();
+    this.v = new THREE.Vector3();
+
+    this.euler = new THREE.Euler();
+    this.quaternion = new THREE.Quaternion();
+
+    this.camera.position.set(0, 0.5, 3);
     this.camera.lookAt(0, 0, 0);
 
     this.scene = new THREE.Scene();
     const light = new THREE.DirectionalLight(0xffffff, 3);
     this.scene.background = new THREE.Color(0xffffff);
 
+    this.scene.add(new THREE.GridHelper(30, 30));
     light.castShadow = true;
     light.position.set(15, 5, 20);
-    light.lookAt(0, 0, 0);
+    // light.lookAt(0, 0, 0);
     this.scene.add(light);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -58,6 +74,8 @@ export class Main {
 
     this.thirdPersonController = new ThirdPersonController(this);
     this.#cameraController();
+
+    this.bilbord = this.#bilbordGeometry();
     HelpersDraw.addCustomAxes(this.scene);
     HelpersDraw.addAxesLabels(this.scene);
     HelpersDraw.addAxesLines(this.scene);
@@ -69,8 +87,8 @@ export class Main {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  render() {
-    const dt = 0.016;
+  render(): void {
+    const dt: number = 0.016;
     // const dt: number = this.clock.getDelta();
     this.renderer.render(this.scene, this.camera);
 
@@ -98,23 +116,41 @@ export class Main {
     ).normalize();
 
     // Aplikuj prędkości zgodnie z kierunkiem patrzenia i boku
-    const velocityVector = new THREE.Vector3(
+    const velocityVector: THREE.Vector3 = new THREE.Vector3(
       vecRight.x * this.#velocity.x + vecForward.x * this.#velocity.z,
       0, // Y-axis is not affected
       vecRight.z * this.#velocity.x + vecForward.z * this.#velocity.z
     );
-    console.log(velocityVector);
+
+    this.euler.y = this.yaw.rotation.y;
+    this.quaternion.setFromEuler(this.euler);
+    velocityVector.applyQuaternion(this.quaternion);
+    // this.player.position.add(velocityVector);
+    // console.log(velocityVector);
 
     this.player.position.add(velocityVector.multiplyScalar(dt));
+
+    // this.pivot.position.lerp(this.v, 0.1);
+
+    this.player.getWorldPosition(this.v);
+    this.pivot.position.set(
+      HelpersMath.myApproach(this.pivot.position.x, this.v.x, 0.1),
+      HelpersMath.myApproach(this.pivot.position.y, this.v.y, 0.1),
+      HelpersMath.myApproach(this.pivot.position.z, this.v.z, 0.1)
+    );
+
+    // this.bilbord.lookAt(this.player.position);
   }
 
   //----------------------------------------------------------------------------------------
 
   #createPlayerGeometry(): THREE.Mesh {
-    const geometry = new THREE.BoxGeometry(1, 1.5, 1);
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+    const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(1, 1.5, 1);
+    const material: THREE.BoxGeometry = new THREE.MeshStandardMaterial({
+      color: 0x00ff00,
+    });
 
-    const player = new THREE.Mesh(geometry, material);
+    const player: THREE.Mesh = new THREE.Mesh(geometry, material);
     player.position.y = 1;
     // player.rotation.set(0, Math.PI / 2, 0);
 
@@ -123,16 +159,33 @@ export class Main {
   }
 
   #cameraController(): void {
-    const pivot = new THREE.Object3D();
-    pivot.position.set(0, 1, 10);
+    this.pivot.position.set(0, 5, 10);
 
-    const yaw: THREE.Object3D = new THREE.Object3D();
-    const pitch: THREE.Object3D = new THREE.Object3D();
+    this.scene.add(this.pivot);
+    this.pivot.add(this.yaw);
+    this.yaw.add(this.pitch);
+    this.pitch.add(this.camera);
+  }
+  #bilbordGeometry(): THREE.PlaneGeometry {
+    const map: THREE.TextureLoader = new THREE.TextureLoader().load(
+      "./lepetyna.png"
+    );
 
-    this.scene.add(pivot);
-    pivot.add(yaw);
-    yaw.add(pitch);
-    pitch.add(this.camera);
+    // map.wrapS = THREE.RepeatWrapping;
+    // map.wrapT = THREE.RepeatWrapping;
+
+    // map.repeat.set(4, 4);
+
+    const geometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(5, 5);
+    const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({
+      map: map,
+    });
+
+    const plane: THREE.Mesh = new THREE.Mesh(geometry, material);
+    this.scene.add(plane);
+
+    plane.position.y = 2.5;
+    return plane;
   }
 
   //----------------------------------------------------------------------------------------

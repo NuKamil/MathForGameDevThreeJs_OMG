@@ -26,13 +26,21 @@ class HelpersMath {
     return v >= 0 ? v : -v;
   }
 
-  static myApproach(goal: number, current: number, dt: number): number {
-    const differance: number = goal - current;
+  // static myApproach(goal: number, current: number, dt: number): number {
+  //   const differance: number = goal - current;
 
-    if (differance > dt) return current + dt;
-    if (differance < -dt) return current - dt;
+  //   if (differance > dt) return current + dt;
+  //   if (differance < -dt) return current - dt;
 
-    return goal;
+  //   return goal;
+  // }
+
+  static myApproach(start: number, end: number, amount: number): number {
+    const delta = end - start;
+    if (Math.abs(delta) < 0.01) {
+      return end; // Ustaw wartość końcową, jeśli różnica jest bardzo mała
+    }
+    return start + delta * amount;
   }
 
   static myEulerToVector(euler: THREE.Euler): THREE.Vector3 {
