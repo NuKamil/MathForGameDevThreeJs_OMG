@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <link
+      rel="stylesheet"
+      href="./node_modules/bootstrap/dist/css/bootstrap.css"
+    />
+    <title>ThreeTest</title>
+  </head>
+  <body>
+    <script src="./node_modules/jquery/dist/jquery.js
+    "></script>
+    <script src="./node_modules/bootstrap/dist/js/bootstrap.bundle.js"></script>
+    <script type="module">
+      import { HelpersMath } from "./HelpersMath";
+      window.helpersMath = HelpersMath;
+    </script>
+    <script type="module">
+      import { HelpersDraw } from "./HelpersDraw";
+      window.helpersDraw = HelpersDraw;
+    </script>
+    <script type="module">
+      import { Main } from "./Main.ts";
+      import * as THREE from "three";
+
+      window.THREE = THREE;
+
+      $(document).ready(function () {
+        const main = new Main();
+        window.main = main;
+      });
+    </script>
+  </body>
+</html>
