@@ -1,12 +1,17 @@
 import * as THREE from "three";
 import { HelpersMath } from "./HelpersMath";
 import { HelpersDraw } from "./HelpersDraw";
+import { ThirdPersonController } from "./ThirdPersonController";
 
 export class Main {
   camera: THREE.PerspectiveCamera;
   scene: THREE.Scene;
   renderer: THREE.WebGLRenderer;
   clock: THREE.Clock;
+  thirdPersonController: ThirdPersonController;
+  #velocity: THREE.Vector3;
+  velocityGoal: THREE.Vector3;
+  player: THREE.Mesh;
 
   constructor() {
     const $container = $("<div>");
@@ -19,6 +24,9 @@ export class Main {
       0.1,
       1000
     );
+    this.velocityGoal = new THREE.Vector3(0, 0, 0);
+    this.#velocity = new THREE.Vector3(0, 0, 0);
+
     this.camera.position.set(5, 5, 10);
     this.camera.lookAt(0, 0, 0);
 
@@ -42,11 +50,14 @@ export class Main {
     $($container).append(this.renderer.domElement);
 
     this.#init();
-
     this.renderer.setAnimationLoop(this.render.bind(this));
   }
 
   #init(): void {
+    this.player = this.#createPlayerGeometry();
+
+    this.thirdPersonController = new ThirdPersonController(this);
+    this.#cameraController();
     HelpersDraw.addCustomAxes(this.scene);
     HelpersDraw.addAxesLabels(this.scene);
     HelpersDraw.addAxesLines(this.scene);
@@ -59,9 +70,69 @@ export class Main {
   }
 
   render() {
-    this.renderer.render(this.scene, this.camera);
-    // const dt: number = this.clock.getDelta();
     const dt = 0.016;
+    // const dt: number = this.clock.getDelta();
+    this.renderer.render(this.scene, this.camera);
+
+    this.thirdPersonController.update(dt);
+
+    this.#velocity.x = HelpersMath.myApproach(
+      this.velocityGoal.x,
+      this.#velocity.x,
+      dt * 10
+    );
+
+    this.#velocity.z = HelpersMath.myApproach(
+      this.velocityGoal.z,
+      this.#velocity.z,
+      dt * 10
+    );
+
+    const vecForward = HelpersMath.myEulerToVector(
+      this.player.rotation
+    ).normalize();
+    // const vecRight = new THREE.Vector3(0, 1, 0).cross(vecForward).normalize();
+    const vecRight: THREE.Vector3 = HelpersMath.crossProduct(
+      new THREE.Vector3(0, 1, 0),
+      vecForward
+    ).normalize();
+
+    // Aplikuj prędkości zgodnie z kierunkiem patrzenia i boku
+    const velocityVector = new THREE.Vector3(
+      vecRight.x * this.#velocity.x + vecForward.x * this.#velocity.z,
+      0, // Y-axis is not affected
+      vecRight.z * this.#velocity.x + vecForward.z * this.#velocity.z
+    );
+    console.log(velocityVector);
+
+    this.player.position.add(velocityVector.multiplyScalar(dt));
+  }
+
+  //----------------------------------------------------------------------------------------
+
+  #createPlayerGeometry(): THREE.Mesh {
+    const geometry = new THREE.BoxGeometry(1, 1.5, 1);
+    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+
+    const player = new THREE.Mesh(geometry, material);
+    player.position.y = 1;
+    // player.rotation.set(0, Math.PI / 2, 0);
+
+    this.scene.add(player);
+    return player;
+  }
+
+  #cameraController(): void {
+    const pivot = new THREE.Object3D();
+    pivot.position.set(0, 1, 10);
+
+    const yaw: THREE.Object3D = new THREE.Object3D();
+    const pitch: THREE.Object3D = new THREE.Object3D();
+
+    this.scene.add(pivot);
+    pivot.add(yaw);
+    yaw.add(pitch);
+    pitch.add(this.camera);
   }
 
   //----------------------------------------------------------------------------------------
