@@ -22,7 +22,10 @@ export class Main {
   helperArrowBilbord_F: THREE.Vector3;
   helperArrowBilbord_R: THREE.Vector3;
   helperArrowBilbord_U: THREE.Vector3;
+  helperArrowPlayerDir: THREE.Vector3;
   rotationMatrix: THREE.Matrix4;
+  playerDirection: THREE.Vector3;
+  matrix4x4: THREE.Matrix4;
 
   constructor() {
     const $container = $("<div>");
@@ -47,6 +50,10 @@ export class Main {
     this.helperArrowBilbord_R = new THREE.Vector3();
     this.helperArrowBilbord_U = new THREE.Vector3();
 
+    this.playerDirection = new THREE.Vector3();
+    this.helperArrowPlayerDir = new THREE.Vector3();
+
+    this.matrix4x4 = new THREE.Matrix4();
     this.rotationMatrix = new THREE.Matrix4();
 
     this.euler = new THREE.Euler();
@@ -56,21 +63,20 @@ export class Main {
     this.camera.lookAt(0, 0, 0);
 
     this.scene = new THREE.Scene();
-    const light = new THREE.DirectionalLight(0xffffff, 3);
+    const light: THREE.DirectionalLight = new THREE.DirectionalLight(
+      0xffffff,
+      3
+    );
     this.scene.background = new THREE.Color(0xffffff);
 
     this.scene.add(new THREE.GridHelper(30, 30));
     light.castShadow = true;
     light.position.set(15, 5, 20);
-    // light.lookAt(0, 0, 0);
     this.scene.add(light);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-
-    // var controls = new OrbitControls(this.camera, this.renderer.domElement);
-    // controls.update();
 
     $(window).on("resize", this.resize.bind(this));
     $($container).append(this.renderer.domElement);
@@ -83,7 +89,13 @@ export class Main {
     this.player = this.#createPlayerGeometry();
 
     this.thirdPersonController = new ThirdPersonController(this);
-    this.#cameraController();
+
+    this.pivot.position.set(0, 5, 10);
+
+    this.scene.add(this.pivot);
+    this.pivot.add(this.yaw);
+    this.yaw.add(this.pitch);
+    this.pitch.add(this.camera);
 
     this.bilbord = this.#bilbordGeometry();
     HelpersDraw.addCustomAxes(this.scene);
@@ -114,6 +126,13 @@ export class Main {
       0xdd0000,
       this.scene
     );
+
+    this.helperArrowPlayerDir = HelpersDraw.arrowHelper(
+      new THREE.Vector3(),
+      this.playerDirection,
+      0xdd0000,
+      this.scene
+    );
   }
 
   resize() {
@@ -124,7 +143,6 @@ export class Main {
 
   render(): void {
     const dt: number = 0.016;
-    // const dt: number = this.clock.getDelta();
     this.renderer.render(this.scene, this.camera);
 
     this.thirdPersonController.update(dt);
@@ -140,32 +158,50 @@ export class Main {
       this.#velocity.z,
       dt * 10
     );
+    this.euler.y = this.yaw.rotation.y;
+    this.quaternion.setFromEuler(this.euler);
 
-    const vecForward = HelpersMath.myEulerToVector(
+    const camera_vector = HelpersMath.myEulerToVector(
+      this.camera.rotation.clone()
+    );
+
+    const cameraDirection = camera_vector.applyQuaternion(this.quaternion);
+
+    const actualForward: THREE.Vector3 = cameraDirection.normalize();
+
+    const actualUp: THREE.Vector3 = new THREE.Vector3(0, 1, 0).normalize();
+
+    const actualRight: THREE.Vector3 = HelpersMath.crossProduct(
+      actualUp,
+      actualForward
+    ).normalize();
+
+    this.matrix4x4.makeBasis(actualForward, actualUp, actualRight);
+
+    this.player.rotation.setFromRotationMatrix(this.matrix4x4);
+
+    this.helperArrowPlayerDir.setDirection(cameraDirection.clone());
+    this.helperArrowPlayerDir.setLength(cameraDirection.length());
+    this.helperArrowPlayerDir.position.copy(this.player.position);
+
+    const vecForward: THREE.Vector3 = HelpersMath.myEulerToVector(
       this.player.rotation
     ).normalize();
-    // const vecRight = new THREE.Vector3(0, 1, 0).cross(vecForward).normalize();
+
     const vecRight: THREE.Vector3 = HelpersMath.crossProduct(
       new THREE.Vector3(0, 1, 0),
       vecForward
     ).normalize();
 
-    // Aplikuj prędkości zgodnie z kierunkiem patrzenia i boku
     const velocityVector: THREE.Vector3 = new THREE.Vector3(
       vecRight.x * this.#velocity.x + vecForward.x * this.#velocity.z,
-      0, // Y-axis is not affected
+      0,
       vecRight.z * this.#velocity.x + vecForward.z * this.#velocity.z
     );
 
-    this.euler.y = this.yaw.rotation.y;
-    this.quaternion.setFromEuler(this.euler);
     velocityVector.applyQuaternion(this.quaternion);
-    // this.player.position.add(velocityVector);
-    // console.log(velocityVector);
 
     this.player.position.add(velocityVector.multiplyScalar(dt));
-
-    // this.pivot.position.lerp(this.v, 0.1);
 
     this.player.getWorldPosition(this.v);
     this.pivot.position.set(
@@ -174,32 +210,32 @@ export class Main {
       HelpersMath.myApproach(this.pivot.position.z, this.v.z, 0.1)
     );
 
-    // this.bilbord.lookAt(this.v);
-
     const F: THREE.Vector3 = this.player.position
       .clone()
       .sub(this.bilbord.position);
+
     const R: THREE.Vector3 = HelpersMath.crossProduct(
       new THREE.Vector3(0, 1, 0),
       F
     );
-    const U: THREE.Vector3 = HelpersMath.crossProduct(F, R);
+
+    const U: THREE.Vector3 = HelpersMath.crossProduct(R, F);
 
     this.helperArrowBilbord_F.setDirection(F.clone().normalize());
     this.helperArrowBilbord_F.setLength(F.length());
     this.helperArrowBilbord_F.position.copy(this.bilbord.position);
 
-    this.helperArrowBilbord_R.setDirection(R.normalize());
+    this.helperArrowBilbord_R.setDirection(R.clone().normalize());
     this.helperArrowBilbord_R.setLength(R.length());
     this.helperArrowBilbord_R.position.copy(this.bilbord.position);
-    this.helperArrowBilbord_U.setDirection(U.normalize());
+
+    this.helperArrowBilbord_U.setDirection(U.clone().normalize());
     this.helperArrowBilbord_U.setLength(U.length());
     this.helperArrowBilbord_U.position.copy(this.bilbord.position);
 
     this.rotationMatrix.makeBasis(R.normalize(), U.normalize(), F.normalize());
-    this.bilbord.rotation.setFromRotationMatrix(this.rotationMatrix);
 
-    // const playerBasis = this.
+    this.bilbord.rotation.setFromRotationMatrix(this.rotationMatrix);
   }
 
   //----------------------------------------------------------------------------------------
@@ -218,25 +254,12 @@ export class Main {
     return player;
   }
 
-  #cameraController(): void {
-    this.pivot.position.set(0, 5, 10);
-
-    this.scene.add(this.pivot);
-    this.pivot.add(this.yaw);
-    this.yaw.add(this.pitch);
-    this.pitch.add(this.camera);
-  }
   #bilbordGeometry(): THREE.PlaneGeometry {
     const map: THREE.TextureLoader = new THREE.TextureLoader().load(
       "./lepetyna.png"
     );
 
-    // map.wrapS = THREE.RepeatWrapping;
-    // map.wrapT = THREE.RepeatWrapping;
-
-    // map.repeat.set(4, 4);
-
-    const geometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(5, 5);
+    const geometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(2, 2);
     const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({
       map: map,
     });
@@ -244,7 +267,7 @@ export class Main {
     const plane: THREE.Mesh = new THREE.Mesh(geometry, material);
     this.scene.add(plane);
 
-    plane.position.y = 2.5;
+    plane.position.y = 1;
     return plane;
   }
 
