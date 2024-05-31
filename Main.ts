@@ -26,6 +26,7 @@ export class Main {
   rotationMatrix: THREE.Matrix4;
   playerDirection: THREE.Vector3;
   matrix4x4: THREE.Matrix4;
+  cameraDirection: THREE.Vector3;
 
   constructor() {
     const $container = $("<div>");
@@ -45,6 +46,7 @@ export class Main {
     this.yaw = new THREE.Object3D();
     this.pitch = new THREE.Object3D();
     this.v = new THREE.Vector3();
+    this.cameraDirection = new THREE.Vector3();
 
     this.helperArrowBilbord_F = new THREE.Vector3();
     this.helperArrowBilbord_R = new THREE.Vector3();
@@ -128,9 +130,9 @@ export class Main {
     );
 
     this.helperArrowPlayerDir = HelpersDraw.arrowHelper(
-      new THREE.Vector3(),
-      this.playerDirection,
-      0xdd0000,
+      this.player.position,
+      this.cameraDirection,
+      0x0000dd,
       this.scene
     );
   }
@@ -158,40 +160,15 @@ export class Main {
       this.#velocity.z,
       dt * 10
     );
-    this.euler.y = this.yaw.rotation.y;
-    this.quaternion.setFromEuler(this.euler);
 
-    const camera_vector = HelpersMath.myEulerToVector(
-      this.camera.rotation.clone()
-    );
+    this.camera.getWorldDirection(this.cameraDirection).normalize();
+    this.cameraDirection.y = 0;
 
-    const cameraDirection = camera_vector.applyQuaternion(this.quaternion);
-
-    const actualForward: THREE.Vector3 = cameraDirection.normalize();
-
-    const actualUp: THREE.Vector3 = new THREE.Vector3(0, 1, 0).normalize();
-
-    const actualRight: THREE.Vector3 = HelpersMath.crossProduct(
-      actualUp,
-      actualForward
-    ).normalize();
-
-    this.matrix4x4.makeBasis(actualForward, actualUp, actualRight);
-
-    this.player.rotation.setFromRotationMatrix(this.matrix4x4);
-
-    this.helperArrowPlayerDir.setDirection(cameraDirection.clone());
-    this.helperArrowPlayerDir.setLength(cameraDirection.length());
-    this.helperArrowPlayerDir.position.copy(this.player.position);
-
-    const vecForward: THREE.Vector3 = HelpersMath.myEulerToVector(
-      this.player.rotation
-    ).normalize();
-
-    const vecRight: THREE.Vector3 = HelpersMath.crossProduct(
-      new THREE.Vector3(0, 1, 0),
-      vecForward
-    ).normalize();
+    const vecForward: THREE.Vector3 = this.cameraDirection.clone().normalize();
+    const actualUp: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
+    const vecRight: THREE.Vector3 = new THREE.Vector3()
+      .crossVectors(actualUp, vecForward)
+      .normalize();
 
     const velocityVector: THREE.Vector3 = new THREE.Vector3(
       vecRight.x * this.#velocity.x + vecForward.x * this.#velocity.z,
@@ -199,11 +176,13 @@ export class Main {
       vecRight.z * this.#velocity.x + vecForward.z * this.#velocity.z
     );
 
+    this.matrix4x4.makeBasis(vecRight, actualUp, vecForward);
+    this.player.rotation.setFromRotationMatrix(this.matrix4x4);
     velocityVector.applyQuaternion(this.quaternion);
-
     this.player.position.add(velocityVector.multiplyScalar(dt));
 
     this.player.getWorldPosition(this.v);
+
     this.pivot.position.set(
       HelpersMath.myApproach(this.pivot.position.x, this.v.x, 0.1),
       HelpersMath.myApproach(this.pivot.position.y, this.v.y, 0.1),
@@ -213,23 +192,27 @@ export class Main {
     const F: THREE.Vector3 = this.player.position
       .clone()
       .sub(this.bilbord.position);
-
-    const R: THREE.Vector3 = HelpersMath.crossProduct(
+    const R: THREE.Vector3 = new THREE.Vector3().crossVectors(
       new THREE.Vector3(0, 1, 0),
       F
     );
+    const U: THREE.Vector3 = new THREE.Vector3().crossVectors(F, R);
 
-    const U: THREE.Vector3 = HelpersMath.crossProduct(R, F);
+    this.helperArrowPlayerDir.setDirection(
+      this.cameraDirection.clone().normalize()
+    );
+    this.helperArrowPlayerDir.setLength(this.cameraDirection.length());
+    this.helperArrowPlayerDir.position.copy(this.player.position);
 
     this.helperArrowBilbord_F.setDirection(F.clone().normalize());
     this.helperArrowBilbord_F.setLength(F.length());
     this.helperArrowBilbord_F.position.copy(this.bilbord.position);
 
-    this.helperArrowBilbord_R.setDirection(R.clone().normalize());
+    this.helperArrowBilbord_R.setDirection(R.normalize());
     this.helperArrowBilbord_R.setLength(R.length());
     this.helperArrowBilbord_R.position.copy(this.bilbord.position);
 
-    this.helperArrowBilbord_U.setDirection(U.clone().normalize());
+    this.helperArrowBilbord_U.setDirection(U.normalize());
     this.helperArrowBilbord_U.setLength(U.length());
     this.helperArrowBilbord_U.position.copy(this.bilbord.position);
 

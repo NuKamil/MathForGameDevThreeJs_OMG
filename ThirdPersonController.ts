@@ -64,8 +64,8 @@ class ThirdPersonController {
   }
 
   update(dt: number): void {
-    this.#main.velocityGoal.x = this.#move.forward;
-    this.#main.velocityGoal.z = this.#move.right;
+    this.#main.velocityGoal.x = this.#move.right;
+    this.#main.velocityGoal.z = this.#move.forward;
 
     // console.log(this.#move.forward, this.#move.right);
   }
@@ -78,7 +78,7 @@ class ThirdPersonController {
         break;
       case "a":
         this.#keys.a = true;
-        this.#move.right = -5;
+        this.#move.right = 5;
         break;
       case "s":
         this.#keys.s = true;
@@ -86,7 +86,7 @@ class ThirdPersonController {
         break;
       case "d":
         this.#keys.d = true;
-        this.#move.right = 5;
+        this.#move.right = -5;
         break;
       case " ":
         // this.jump();
