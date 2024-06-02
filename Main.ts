@@ -19,6 +19,7 @@ export class Main {
   quaternion: THREE.Quaternion;
   v: THREE.Vector3;
   bilbord: THREE.Mesh;
+  enemies: THREE.Mesh;
   helperArrowBilbord_F: THREE.Vector3;
   helperArrowBilbord_R: THREE.Vector3;
   helperArrowBilbord_U: THREE.Vector3;
@@ -27,6 +28,9 @@ export class Main {
   playerDirection: THREE.Vector3;
   matrix4x4: THREE.Matrix4;
   cameraDirection: THREE.Vector3;
+  enemiesArr: THREE.Mesh[] = [];
+  enemiesArrowDir: THREE.ArrowHelper[] = [];
+  randomPos: THREE.Vector3;
 
   constructor() {
     const $container = $("<div>");
@@ -61,7 +65,7 @@ export class Main {
     this.euler = new THREE.Euler();
     this.quaternion = new THREE.Quaternion();
 
-    this.camera.position.set(0, 0.5, 3);
+    this.camera.position.set(0, 2, 3);
     this.camera.lookAt(0, 0, 0);
 
     this.scene = new THREE.Scene();
@@ -100,6 +104,25 @@ export class Main {
     this.pitch.add(this.camera);
 
     this.bilbord = this.#bilbordGeometry();
+
+    for (let i = 0; i <= 10; i++) {
+      this.enemies = this.#createRandomGeometries();
+      this.enemiesArr.push(this.enemies);
+    }
+
+    const enemieScaleMatrix: THREE.Matrix4 = new THREE.Matrix4().makeScale(
+      5,
+      5,
+      5
+    );
+    this.enemiesArr.forEach((enemie, i) => {
+      if (i === 2) {
+        enemie.position.set(0, 0, 0);
+        enemie.applyMatrix4(enemieScaleMatrix);
+        enemie.position.copy(this.randomPos);
+      }
+    });
+
     HelpersDraw.addCustomAxes(this.scene);
     HelpersDraw.addAxesLabels(this.scene);
     HelpersDraw.addAxesLines(this.scene);
@@ -111,7 +134,7 @@ export class Main {
     this.helperArrowBilbord_F = HelpersDraw.arrowHelper(
       new THREE.Vector3(),
       this.bilbord.position,
-      0xdd0000,
+      0x0000ff,
       this.scene
     );
 
@@ -125,16 +148,25 @@ export class Main {
     this.helperArrowBilbord_U = HelpersDraw.arrowHelper(
       new THREE.Vector3(),
       this.bilbord.position,
-      0xdd0000,
+      0x00ff00,
       this.scene
     );
 
-    this.helperArrowPlayerDir = HelpersDraw.arrowHelper(
-      this.player.position,
-      this.cameraDirection,
-      0x0000dd,
-      this.scene
-    );
+    // this.enemiesArr.forEach((enemie) => {
+    //   if (enemie) {
+    //     this.helperArrowPlayerDir = HelpersDraw.arrowHelper(
+    //       this.player.position,
+    //       enemie.position,
+    //       0x0000dd,
+    //       this.scene
+    //     );
+    //     this.enemiesArrowDir.push(this.helperArrowPlayerDir);
+    //   }
+    // });
+
+    // console.log(this.enemiesArrowDir);
+
+    // do celów pomocniczych
   }
 
   resize() {
@@ -181,8 +213,8 @@ export class Main {
     velocityVector.applyQuaternion(this.quaternion);
     this.player.position.add(velocityVector.multiplyScalar(dt));
 
+    //interpolacja kamery
     this.player.getWorldPosition(this.v);
-
     this.pivot.position.set(
       HelpersMath.myApproach(this.pivot.position.x, this.v.x, 0.1),
       HelpersMath.myApproach(this.pivot.position.y, this.v.y, 0.1),
@@ -198,27 +230,45 @@ export class Main {
     );
     const U: THREE.Vector3 = new THREE.Vector3().crossVectors(F, R);
 
-    this.helperArrowPlayerDir.setDirection(
-      this.cameraDirection.clone().normalize()
-    );
-    this.helperArrowPlayerDir.setLength(this.cameraDirection.length());
-    this.helperArrowPlayerDir.position.copy(this.player.position);
+    // this.helperArrowBilbord_F.setDirection(F.clone().normalize());
+    // this.helperArrowBilbord_F.setLength(F.length());
+    // this.helperArrowBilbord_F.position.copy(this.bilbord.position);
 
-    this.helperArrowBilbord_F.setDirection(F.clone().normalize());
-    this.helperArrowBilbord_F.setLength(F.length());
-    this.helperArrowBilbord_F.position.copy(this.bilbord.position);
+    // this.helperArrowBilbord_R.setDirection(R.normalize());
+    // this.helperArrowBilbord_R.setLength(R.length());
+    // this.helperArrowBilbord_R.position.copy(this.bilbord.position);
 
-    this.helperArrowBilbord_R.setDirection(R.normalize());
-    this.helperArrowBilbord_R.setLength(R.length());
-    this.helperArrowBilbord_R.position.copy(this.bilbord.position);
-
-    this.helperArrowBilbord_U.setDirection(U.normalize());
-    this.helperArrowBilbord_U.setLength(U.length());
-    this.helperArrowBilbord_U.position.copy(this.bilbord.position);
+    // this.helperArrowBilbord_U.setDirection(U.normalize());
+    // this.helperArrowBilbord_U.setLength(U.length());
+    // this.helperArrowBilbord_U.position.copy(this.bilbord.position);
 
     this.rotationMatrix.makeBasis(R.normalize(), U.normalize(), F.normalize());
-
     this.bilbord.rotation.setFromRotationMatrix(this.rotationMatrix);
+
+    this.enemiesArr.forEach((enemie, i) => {
+      const Fe: THREE.Vector3 = this.player.position
+        .clone()
+        .sub(enemie.position);
+      const Re: THREE.Vector3 = new THREE.Vector3().crossVectors(
+        new THREE.Vector3(0, 1, 0),
+        Fe
+      );
+      const Ue: THREE.Vector3 = new THREE.Vector3().crossVectors(Fe, Re);
+
+      // this.enemiesArrowDir[i].setDirection(Fe.clone().normalize());
+      // this.enemiesArrowDir[i].setLength(Fe.length(), 0.4, 0.2);
+      // this.enemiesArrowDir[i].position.copy(enemie.position);
+
+      const enemieRotationMatrix: THREE.Matrix4 = new THREE.Matrix4();
+
+      enemie.rotation.setFromRotationMatrix(
+        enemieRotationMatrix.makeBasis(
+          Re.normalize(),
+          Ue.normalize(),
+          Fe.normalize()
+        )
+      );
+    });
   }
 
   //----------------------------------------------------------------------------------------
@@ -235,6 +285,26 @@ export class Main {
 
     this.scene.add(player);
     return player;
+  }
+
+  #createRandomGeometries(): THREE.Mesh {
+    const geometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(0.5, 2);
+    const material: THREE.BoxGeometry = new THREE.MeshStandardMaterial({
+      color: 0xaaaaaa,
+    });
+
+    const enemies: THREE.Mesh = new THREE.Mesh(geometry, material);
+    this.randomPos = new THREE.Vector3(
+      HelpersMath.getRandomIntInRange(-15, 15),
+      1,
+      HelpersMath.getRandomIntInRange(-15, 15)
+    );
+
+    this.scene.add(enemies);
+    enemies.position.copy(this.randomPos);
+    // player.rotation.set(0, Math.PI / 2, 0);
+
+    return enemies;
   }
 
   #bilbordGeometry(): THREE.PlaneGeometry {

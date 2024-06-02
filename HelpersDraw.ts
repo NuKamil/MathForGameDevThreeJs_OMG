@@ -9,13 +9,17 @@ class HelpersDraw {
     color: number = 0xffdd00,
     scene: THREE.Scene
   ): THREE.Vector3 {
+    const arrowLength: number = v.length();
+    const headLength: number = 0.4; // Stała długość główki strzałki
+    const headWidth: number = 0.2;
+
     var arrowHelper5 = new THREE.ArrowHelper(
       v.clone().normalize(), //kierunek
       startPoint,
-      v.length(),
+      arrowLength,
       color,
-      0.4,
-      0.2
+      headLength,
+      headWidth
     );
     scene.add(arrowHelper5);
 

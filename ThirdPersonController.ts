@@ -29,12 +29,19 @@ class ThirdPersonController {
   #player: THREE.Mesh;
   #main: Main;
   #camera: THREE.PerspectiveCamera;
+  #scene: THREE.Scene;
+  #raycaster: THREE.Raycaster;
+  #pointer: THREE.Vector2;
 
   constructor(main: Main) {
     this.#main = main;
     this.#player = main.player;
     this.#camera = main.camera;
+    this.#scene = main.scene;
     this.#move = { forward: 0, right: 0 };
+
+    this.#raycaster = new THREE.Raycaster();
+    this.#pointer = new THREE.Vector2();
 
     this.initKeyControl();
   }
@@ -46,6 +53,7 @@ class ThirdPersonController {
     document.addEventListener("mouseup", this.#mouseUp.bind(this));
     document.addEventListener("mousemove", this.#mouseMove.bind(this));
     document.addEventListener("wheel", this.#onDocumentMouseWheel.bind(this));
+    document.addEventListener("pointermove", this.#onPointerMove.bind(this));
 
     this.#keys = {
       w: false,
@@ -114,11 +122,35 @@ class ThirdPersonController {
         break;
     }
   }
+  #onPointerMove(event: PointerEvent) {
+    this.#pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.#pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  }
 
   #mouseDown(e: MouseEvent): void {
     this.mouse.mousedown = true;
     this.mouse.mouseorigin.x = e.clientX;
     this.mouse.mouseorigin.y = e.clientY;
+
+    this.#raycaster.setFromCamera(this.#pointer, this.#camera);
+
+    // calculate objects intersecting the picking ray
+    const intersects: THREE.Raycaster = this.#raycaster.intersectObjects(
+      this.#scene.children
+    );
+
+    console.log(intersects[0].object);
+
+    for (let i = 0; i < intersects.length; i++) {
+      if (
+        intersects[0].object.type === "GridHelper" ||
+        intersects[0].object.type === "Line"
+      ) {
+        return;
+      } else {
+        intersects[i].object.material.color.set(0xff0000);
+      }
+    }
   }
 
   #mouseUp(e: MouseEvent): void {
@@ -129,6 +161,7 @@ class ThirdPersonController {
     const v = this.#camera.position.z + e.deltaY * 0.005;
     if (v >= 2 && v <= 10) {
       this.#camera.position.z = v;
+      this.#camera.position.y = v;
     }
   }
 
