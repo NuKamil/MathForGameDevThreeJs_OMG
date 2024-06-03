@@ -230,17 +230,17 @@ export class Main {
     );
     const U: THREE.Vector3 = new THREE.Vector3().crossVectors(F, R);
 
-    // this.helperArrowBilbord_F.setDirection(F.clone().normalize());
-    // this.helperArrowBilbord_F.setLength(F.length());
-    // this.helperArrowBilbord_F.position.copy(this.bilbord.position);
+    this.helperArrowBilbord_F.setDirection(F.clone().normalize());
+    this.helperArrowBilbord_F.setLength(F.length());
+    this.helperArrowBilbord_F.position.copy(this.bilbord.position);
 
-    // this.helperArrowBilbord_R.setDirection(R.normalize());
-    // this.helperArrowBilbord_R.setLength(R.length());
-    // this.helperArrowBilbord_R.position.copy(this.bilbord.position);
+    this.helperArrowBilbord_R.setDirection(R.normalize());
+    this.helperArrowBilbord_R.setLength(R.length());
+    this.helperArrowBilbord_R.position.copy(this.bilbord.position);
 
-    // this.helperArrowBilbord_U.setDirection(U.normalize());
-    // this.helperArrowBilbord_U.setLength(U.length());
-    // this.helperArrowBilbord_U.position.copy(this.bilbord.position);
+    this.helperArrowBilbord_U.setDirection(U.normalize());
+    this.helperArrowBilbord_U.setLength(U.length());
+    this.helperArrowBilbord_U.position.copy(this.bilbord.position);
 
     this.rotationMatrix.makeBasis(R.normalize(), U.normalize(), F.normalize());
     this.bilbord.rotation.setFromRotationMatrix(this.rotationMatrix);

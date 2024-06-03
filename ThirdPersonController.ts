@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { Main } from "./Main";
+import { HelpersDraw } from "./HelpersDraw";
 
 interface KeyState {
   w: boolean;
@@ -32,6 +33,7 @@ class ThirdPersonController {
   #scene: THREE.Scene;
   #raycaster: THREE.Raycaster;
   #pointer: THREE.Vector2;
+  helperArrow: THREE.Mesh;
 
   constructor(main: Main) {
     this.#main = main;
@@ -43,6 +45,12 @@ class ThirdPersonController {
     this.#raycaster = new THREE.Raycaster();
     this.#pointer = new THREE.Vector2();
 
+    this.helperArrow = HelpersDraw.arrowHelper(
+      this.#raycaster.ray.direction,
+      this.#camera.position,
+      0x00ffdd,
+      this.#scene
+    );
     this.initKeyControl();
   }
 
@@ -74,6 +82,14 @@ class ThirdPersonController {
   update(dt: number): void {
     this.#main.velocityGoal.x = this.#move.right;
     this.#main.velocityGoal.z = this.#move.forward;
+
+    if (this.helperArrow) {
+      this.helperArrow.setDirection(
+        this.#raycaster.ray.direction.clone().normalize()
+      );
+      this.helperArrow.setLength(1000, 0.4, 0.2);
+      this.helperArrow.position.copy(this.#player.position);
+    }
 
     // console.log(this.#move.forward, this.#move.right);
   }
@@ -134,12 +150,14 @@ class ThirdPersonController {
 
     this.#raycaster.setFromCamera(this.#pointer, this.#camera);
 
+    console.log(this.#raycaster.ray.direction);
+
     // calculate objects intersecting the picking ray
     const intersects: THREE.Raycaster = this.#raycaster.intersectObjects(
       this.#scene.children
     );
 
-    console.log(intersects[0].object);
+    // console.log(intersects[0].object);
 
     for (let i = 0; i < intersects.length; i++) {
       if (
