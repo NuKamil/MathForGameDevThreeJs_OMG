@@ -123,6 +123,8 @@ export class Main {
       }
     });
 
+    const autodescCube = this.#createChamferedCube(10, 2);
+
     HelpersDraw.addCustomAxes(this.scene);
     HelpersDraw.addAxesLabels(this.scene);
     HelpersDraw.addAxesLines(this.scene);
@@ -169,7 +171,7 @@ export class Main {
     // do celów pomocniczych
   }
 
-  resize() {
+  resize(): void {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -289,7 +291,7 @@ export class Main {
 
   #createRandomGeometries(): THREE.Mesh {
     const geometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(0.5, 2);
-    const material: THREE.BoxGeometry = new THREE.MeshStandardMaterial({
+    const material: THREE.BoxGeometry = new THREE.MeshBasicMaterial({
       color: 0xaaaaaa,
     });
 
@@ -322,6 +324,37 @@ export class Main {
 
     plane.position.y = 1;
     return plane;
+  }
+
+  #createChamferedCube(size: number, chamfer: number): THREE.Mesh {
+    const geometry = new THREE.BoxGeometry(size, size, size); // Tworzenie sześcianu o podanym rozmiarze
+    const position = geometry.attributes.position; // Pobieranie atrybutu pozycji wierzchołków
+    const vector = new THREE.Vector3(); // Tworzenie wektora pomocniczego
+
+    for (let i = 0; i < position.count; i++) {
+      vector.fromBufferAttribute(position, i); // Pobieranie współrzędnych wierzchołka
+
+      // Ścięcie krawędzi
+      vector.x =
+        Math.sign(vector.x) * Math.max(Math.abs(vector.x) - chamfer, 0);
+      vector.y =
+        Math.sign(vector.y) * Math.max(Math.abs(vector.y) - chamfer, 0);
+      vector.z =
+        Math.sign(vector.z) * Math.max(Math.abs(vector.z) - chamfer, 0);
+
+      position.setXYZ(i, vector.x, vector.y, vector.z); // Ustawienie nowych współrzędnych wierzchołka
+    }
+
+    geometry.computeVertexNormals(); // Przeliczenie normalnych, aby uzyskać odpowiednie oświetlenie
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xaaaaaa,
+    });
+    const cube = new THREE.Mesh(geometry, material);
+
+    this.scene.add(cube);
+
+    return cube; // Zwracanie zmodyfikowanej geometrii
   }
 
   //----------------------------------------------------------------------------------------
