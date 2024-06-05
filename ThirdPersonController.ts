@@ -34,6 +34,8 @@ class ThirdPersonController {
   #raycaster: THREE.Raycaster;
   #pointer: THREE.Vector2;
   helperArrow: THREE.Mesh;
+  cameraWorldPosition: THREE.Vector3;
+  difVec: THREE.Vector3;
 
   constructor(main: Main) {
     this.#main = main;
@@ -44,13 +46,9 @@ class ThirdPersonController {
 
     this.#raycaster = new THREE.Raycaster();
     this.#pointer = new THREE.Vector2();
+    this.cameraWorldPosition = new THREE.Vector3();
+    this.difVec = new THREE.Vector3();
 
-    this.helperArrow = HelpersDraw.arrowHelper(
-      this.#raycaster.ray.direction,
-      this.#camera.position,
-      0x00ffdd,
-      this.#scene
-    );
     this.initKeyControl();
   }
 
@@ -83,15 +81,12 @@ class ThirdPersonController {
     this.#main.velocityGoal.x = this.#move.right;
     this.#main.velocityGoal.z = this.#move.forward;
 
+    this.#camera.getWorldPosition(this.cameraWorldPosition);
     if (this.helperArrow) {
-      this.helperArrow.setDirection(
-        this.#raycaster.ray.direction.clone().normalize()
-      );
-      this.helperArrow.setLength(1000, 0.4, 0.2);
-      this.helperArrow.position.copy(this.#player.position);
+      const length = this.difVec.length() === 0 ? 1000 : this.difVec.length();
+      this.helperArrow.setLength(length, 0.4, 0.4);
     }
-
-    // console.log(this.#move.forward, this.#move.right);
+    // console.log("Camera position:", this.#camera.position);
   }
 
   #keyDown(e: KeyboardEvent): void {
@@ -150,22 +145,29 @@ class ThirdPersonController {
 
     this.#raycaster.setFromCamera(this.#pointer, this.#camera);
 
-    console.log(this.#raycaster.ray.direction);
+    // console.log(this.#raycaster.ray.direction);
 
     // calculate objects intersecting the picking ray
     const intersects: THREE.Raycaster = this.#raycaster.intersectObjects(
-      this.#scene.children
+      this.#scene.children,
+      true
     );
 
-    // console.log(intersects[0].object);
+    this.helperArrow = HelpersDraw.arrowHelper(
+      this.#raycaster.ray.direction,
+      this.cameraWorldPosition,
+      0x00ffdd,
+      this.#scene
+    );
 
     for (let i = 0; i < intersects.length; i++) {
       if (
-        intersects[0].object.type === "GridHelper" ||
-        intersects[0].object.type === "Line"
+        intersects[i].object.type === "GridHelper" ||
+        intersects[i].object.type === "Line"
       ) {
-        return;
+        this.difVec = new THREE.Vector3(0, 0, 0);
       } else {
+        this.difVec.subVectors(intersects[i].point, this.cameraWorldPosition);
         intersects[i].object.material.color.set(0xff0000);
       }
     }

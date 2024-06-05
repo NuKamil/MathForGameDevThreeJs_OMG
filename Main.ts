@@ -123,7 +123,7 @@ export class Main {
       }
     });
 
-    const autodescCube = this.#createChamferedCube(10, 2);
+    // const autodescCube = this.#createChamferedCube(10, 2);
 
     HelpersDraw.addCustomAxes(this.scene);
     HelpersDraw.addAxesLabels(this.scene);
