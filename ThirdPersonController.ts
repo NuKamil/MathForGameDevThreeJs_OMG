@@ -167,10 +167,93 @@ class ThirdPersonController {
       ) {
         this.difVec = new THREE.Vector3(0, 0, 0);
       } else {
+        const hit = intersects[i];
+
+        // Geometria kostki
+        const geometry = hit.object.geometry;
+
+        // Pobierz wierzchołki trafionego trójkąta
+
+        if (!geometry.attributes.color) {
+          const colors = new Float32Array(
+            geometry.attributes.position.count * 3
+          );
+          for (let i = 0; i < colors.length; i += 3) {
+            colors[i] = 1; // R
+            colors[i + 1] = 1; // G
+            colors[i + 2] = 1; // B
+          }
+          geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+        }
+
+        const colorAttribute = geometry.attributes.color;
+        const face = hit.face;
+
+        const a = geometry.attributes.position.array[face.a * 3];
+        const b = geometry.attributes.position.array[face.b * 3];
+        const c = geometry.attributes.position.array[face.c * 3];
+
+        const vertexA = new THREE.Vector3().fromBufferAttribute(
+          geometry.attributes.position,
+          face.a
+        );
+        const vertexB = new THREE.Vector3().fromBufferAttribute(
+          geometry.attributes.position,
+          face.b
+        );
+        const vertexC = new THREE.Vector3().fromBufferAttribute(
+          geometry.attributes.position,
+          face.c
+        );
+
+        hit.object.localToWorld(vertexA);
+        hit.object.localToWorld(vertexB);
+        hit.object.localToWorld(vertexC);
+
+        // Narysuj linie pomiędzy wierzchołkami
+        this.#drawTriangleEdges(vertexA, vertexB, vertexC);
+
+        // Pobranie atrybutu koloru
+
+        // Ustawienie nowego koloru dla wierzchołków trójkąta
+        const newColor = new THREE.Color(0xff0000); // Czerwony
+
+        colorAttribute.setXYZ(face.a, newColor.r, newColor.g, newColor.b);
+        colorAttribute.setXYZ(face.b, newColor.r, newColor.g, newColor.b);
+        colorAttribute.setXYZ(face.c, newColor.r, newColor.g, newColor.b);
+
+        colorAttribute.needsUpdate = true;
+
+        // Upewnij się, że materiał używa kolorów wierzchołków
+        hit.object.material.vertexColors = true;
+
+        hit.object.material.needsUpdate = true;
+
         this.difVec.subVectors(intersects[i].point, this.cameraWorldPosition);
-        intersects[i].object.material.color.set(0xff0000);
+        // intersects[i].object.material.color.set(0xff0000);
       }
     }
+  }
+  #drawTriangleEdges(vertexA, vertexB, vertexC) {
+    // Utwórz geometrię linii
+    const geometry = new THREE.BufferGeometry().setFromPoints([
+      vertexA,
+      vertexB,
+      vertexC,
+      vertexA,
+    ]);
+
+    // Utwórz materiał linii
+    const material = new THREE.LineBasicMaterial({
+      color: 0x00ff00,
+      linewidth: 2,
+    }); // Zielony
+
+    // Utwórz linię
+    const lineKurwa = new THREE.Line(geometry, material);
+    lineKurwa.name = "lineKurwa";
+    // Dodaj linię do sceny
+    this.#scene.add(lineKurwa);
   }
 
   #mouseUp(e: MouseEvent): void {
@@ -188,7 +271,7 @@ class ThirdPersonController {
   #mouseMove(e: MouseEvent): void {
     this.#main.yaw.rotation.y -= e.movementX * 0.005;
     const v: number = this.#main.pitch.rotation.x - e.movementY * 0.005;
-    if (v > -1 && v < 0.1) {
+    if (v > -1 && v < 1) {
       this.#main.pitch.rotation.x = v;
     }
   }

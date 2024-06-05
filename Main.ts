@@ -232,17 +232,17 @@ export class Main {
     );
     const U: THREE.Vector3 = new THREE.Vector3().crossVectors(F, R);
 
-    this.helperArrowBilbord_F.setDirection(F.clone().normalize());
-    this.helperArrowBilbord_F.setLength(F.length());
-    this.helperArrowBilbord_F.position.copy(this.bilbord.position);
+    // this.helperArrowBilbord_F.setDirection(F.clone().normalize());
+    // this.helperArrowBilbord_F.setLength(F.length());
+    // this.helperArrowBilbord_F.position.copy(this.bilbord.position);
 
-    this.helperArrowBilbord_R.setDirection(R.normalize());
-    this.helperArrowBilbord_R.setLength(R.length());
-    this.helperArrowBilbord_R.position.copy(this.bilbord.position);
+    // this.helperArrowBilbord_R.setDirection(R.normalize());
+    // this.helperArrowBilbord_R.setLength(R.length());
+    // this.helperArrowBilbord_R.position.copy(this.bilbord.position);
 
-    this.helperArrowBilbord_U.setDirection(U.normalize());
-    this.helperArrowBilbord_U.setLength(U.length());
-    this.helperArrowBilbord_U.position.copy(this.bilbord.position);
+    // this.helperArrowBilbord_U.setDirection(U.normalize());
+    // this.helperArrowBilbord_U.setLength(U.length());
+    // this.helperArrowBilbord_U.position.copy(this.bilbord.position);
 
     this.rotationMatrix.makeBasis(R.normalize(), U.normalize(), F.normalize());
     this.bilbord.rotation.setFromRotationMatrix(this.rotationMatrix);
@@ -261,15 +261,15 @@ export class Main {
       // this.enemiesArrowDir[i].setLength(Fe.length(), 0.4, 0.2);
       // this.enemiesArrowDir[i].position.copy(enemie.position);
 
-      const enemieRotationMatrix: THREE.Matrix4 = new THREE.Matrix4();
+      // const enemieRotationMatrix: THREE.Matrix4 = new THREE.Matrix4();
 
-      enemie.rotation.setFromRotationMatrix(
-        enemieRotationMatrix.makeBasis(
-          Re.normalize(),
-          Ue.normalize(),
-          Fe.normalize()
-        )
-      );
+      // enemie.rotation.setFromRotationMatrix(
+      //   enemieRotationMatrix.makeBasis(
+      //     Re.normalize(),
+      //     Ue.normalize(),
+      //     Fe.normalize()
+      //   )
+      // );
     });
   }
 
@@ -290,7 +290,7 @@ export class Main {
   }
 
   #createRandomGeometries(): THREE.Mesh {
-    const geometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(0.5, 2);
+    const geometry: THREE.PlaneGeometry = new THREE.BoxGeometry(1, 1, 1);
     const material: THREE.BoxGeometry = new THREE.MeshBasicMaterial({
       color: 0xaaaaaa,
     });
